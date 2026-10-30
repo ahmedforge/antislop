@@ -1,0 +1,41 @@
+# Operating systems and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# JavaScript dependencies and generated files
+node_modules/
+*.tsbuildinfo
+coverage/
+
+# Builds and release artifacts
+build/
+dist/
+*.zip
+
+# Runtime files
+*.log
+*.pid
