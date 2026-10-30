@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 3: extension filtering, popup settings, and the FastAPI backend skeleton
-are implemented. Database models and community blocklist sync come later.
+Stage 4: extension filtering, popup settings, the FastAPI skeleton, and PostgreSQL
+models/migrations are implemented. Community blocklist sync comes later.
 
 ## Product principles
 
@@ -29,7 +29,7 @@ are implemented. Database models and community blocklist sync come later.
 ```text
 antislop/
 ├── extension/       # TypeScript Chrome MV3 extension
-├── backend/         # FastAPI app and tests; migrations come later
+├── backend/         # FastAPI app, database models, migrations, and tests
 ├── docs/            # Architecture and contributor documentation
 ├── docker-compose.yml # Local API, PostgreSQL, and Redis
 ├── .gitignore
@@ -111,7 +111,7 @@ cp .env.example .env
 .venv/bin/python -m uvicorn app.main:create_app --factory --reload --no-access-log
 ```
 
-Expected test result: `1 passed`. The development API listens on
+Without a test database, expect `1 passed, 14 skipped`. The development API listens on
 `http://127.0.0.1:8000`; `curl http://127.0.0.1:8000/health` returns `{"status":"ok"}`.
 Interactive API documentation is at `/docs`.
 
@@ -143,8 +143,16 @@ PostgreSQL and Redis are available on the internal Compose network.
 Compose is a local-development configuration with explicitly disposable database
 credentials. PostgreSQL data persists in a named volume across `down`/`up`.
 Redis is ephemeral at this stage. The API waits for each dependency's own health
-check before starting, but does not query either service yet. SQLAlchemy, Alembic,
-and data access are introduced in Stage 4.
+check before starting, but does not query either service yet. The SQLAlchemy models and initial Alembic migration are available;
+endpoints do not use them yet. Apply migrations explicitly before future data API work:
+
+```bash
+docker compose run --rm --no-deps backend alembic upgrade head
+docker compose run --rm --no-deps backend alembic check
+```
+
+Run these while PostgreSQL is up. See [database design and migration instructions](docs/database.md)
+for table/index rationale, constraints, rollback behavior, and PostgreSQL integration tests.
 
 `requirements.in` and `requirements-dev.in` declare dependency ranges; the matching
 `.txt` files pin all resolved packages and hashes. To intentionally refresh them

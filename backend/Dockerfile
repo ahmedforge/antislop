@@ -9,6 +9,8 @@ COPY requirements.txt ./
 RUN pip install --require-hashes -r requirements.txt \
     && useradd --create-home --uid 10001 appuser
 COPY --chown=appuser:appuser app ./app
+COPY --chown=appuser:appuser alembic.ini ./
+COPY --chown=appuser:appuser alembic ./alembic
 USER appuser
 
 EXPOSE 8000
