@@ -8,7 +8,7 @@ let context: BrowserContext;
 let profile: string;
 let page: Page;
 let popup: Page;
-const extensionPath = path.resolve("dist");
+const extensionPath = path.resolve("dist-test");
 const extensionId = createHash("sha256").update(extensionPath).digest("hex").slice(0, 32)
   .replace(/[0-9a-f]/g, (c) => String.fromCharCode(97 + parseInt(c, 16)));
 const fixture = `<!doctype html><style>
@@ -36,7 +36,14 @@ test.afterAll(async () => {
   if (profile) await rm(profile, { recursive: true, force: true });
 });
 test.beforeEach(async () => {
-  await popup.evaluate(() => chrome.storage.sync.clear());
+  await popup.evaluate(async () => {
+    await chrome.storage.sync.clear();
+    await chrome.storage.local.set({ blocklistCache: {
+      version: 1, source: "http://127.0.0.1:18076/v1/blocklist",
+      channels: [{ youtube_channel_id: "UC0000000000000000000000", handle: "@antislop-demo-fixture", updated_at: "2026-10-31T00:00:00.123456Z" }],
+      cursor: "2026-10-31T00:00:00.123456Z", validator: null, lastSyncedAt: 1,
+    } });
+  });
   await popup.reload();
   await expect(popup.locator("#mode")).toBeEnabled();
   page = await context.newPage();

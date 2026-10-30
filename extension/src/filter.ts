@@ -1,9 +1,13 @@
-import blocklist from "./blocklist.json";
+import type { Entry } from "./blocklist-cache";
 import type { Settings } from "./settings";
 
 export type Channel = { channelId: string | null; handle: string | null };
-const ids = new Set(blocklist.channelIds);
-const handles = new Set(blocklist.handles.map((handle) => handle.toLowerCase()));
+let ids = new Set<string>();
+let handles = new Set<string>();
+export function setBlocklist(channels: Entry[]): void {
+  ids = new Set(channels.map((entry) => entry.youtube_channel_id));
+  handles = new Set(channels.flatMap((entry) => entry.handle ? [entry.handle.toLowerCase()] : []));
+}
 const classes = ["antislop-blur", "antislop-collapse", "antislop-hide"];
 type CardState = {
   identity: string;
@@ -29,8 +33,9 @@ export function applyFilter(card: Element, channel: Channel | null, settings: Se
     state.revealed = false;
   }
   const flagged = channel && (
-    (channel.channelId !== null && ids.has(channel.channelId)) ||
-    (channel.handle !== null && handles.has(channel.handle.toLowerCase()))
+    channel.channelId !== null
+      ? ids.has(channel.channelId)
+      : channel.handle !== null && handles.has(channel.handle.toLowerCase())
   );
   if (!flagged || !settings.enabled || state?.revealed) {
     card.classList.remove(...classes);

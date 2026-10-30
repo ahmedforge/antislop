@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 5: the backend serves approved-channel snapshots/deltas with ETags and an
-explicit seed importer. The extension still uses its bundled list until Stage 6.
+Stage 6: the extension syncs backend blocklist deltas into a local cache using a
+background service worker and Chrome alarms. Filtering keeps working offline.
 
 ## Product principles
 
@@ -62,10 +62,12 @@ choose Blur (default), Collapse, or Hide and to enable or disable filtering.
 Settings are saved in `chrome.storage.sync` and apply to open tabs without reload.
 Hide mode displays a warning about silently hiding wrongly flagged channels.
 
-The bundled `extension/src/blocklist.json` contains **synthetic test entries only**:
-`@antislop-demo-fixture` and `UC0000000000000000000000`. These are not community
-verdicts about real creators. Regular YouTube browsing may show no filtered cards.
-A vetted seed list and backend sync belong to later stages.
+The extension syncs from `http://127.0.0.1:8000` by default and filters against its
+local cache. A fresh install keeps cards visible until its first successful sync.
+Failures preserve the last valid list. The backend's optional demo seed contains
+synthetic entries only; no real creators are flagged automatically. See
+[extension sync setup and behavior](docs/extension-sync.md) for backend startup,
+API-origin configuration, caching, and offline behavior.
 
 Filtering uses reversible CSS classes. Blur and Collapse offer per-card reveal
 buttons; Hide uses `display: none`. Original YouTube nodes are never removed or
@@ -79,7 +81,8 @@ updates per animation frame. A WeakMap stores card identity, reveal state, and
 existing controls to avoid duplicate UI while supporting reused cards. Settings
 changes rescan current cards. All YouTube selectors are in `extension/src/selectors.ts`.
 Legacy `/user/` and `/c/` links and cards without recognizable channel links are
-skipped. There are no content-script network requests or viewing-history logs.
+skipped. There are no content-script network requests or viewing-history logs. Background
+requests contain only sync cursors and conditional ETags; no viewed channels or videos.
 
 ### Automated verification
 
@@ -91,10 +94,12 @@ npx playwright install chromium
 npm test
 ```
 
-The tests load the actual extension in isolated Chromium with real Chrome storage,
-and intercept YouTube requests to serve controlled fixture HTML. They check default
+The tests build a separate `dist-test` extension and load it in isolated Chromium
+with real Chrome storage/alarms. A local API fixture uses port 18076, and intercepted
+YouTube requests serve controlled fixture HTML. They check default
 blur, classic and nested cards, collapse, hide, live on/off, DOM preservation,
-individual reveal, delayed links, recycled cards, and settings persistence.
+individual reveal, delayed links, recycled cards, settings persistence, delta sync,
+removals, ETags, offline recovery, and browser restart.
 This verifies extension behavior, not compatibility with every live YouTube layout.
 Rebuild and reload the unpacked extension after source changes.
 

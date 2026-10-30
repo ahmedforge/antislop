@@ -1,6 +1,7 @@
+import { watchBlocklist } from "./blocklist-cache";
 import { SELECTORS } from "./selectors";
 
-import { applyFilter, type Channel } from "./filter";
+import { applyFilter, setBlocklist, type Channel } from "./filter";
 import { DEFAULT_SETTINGS, watchSettings } from "./settings";
 let settings = { ...DEFAULT_SETTINGS };
 
@@ -83,6 +84,11 @@ observer.observe(document.documentElement, {
   subtree: true,
   attributes: true,
   attributeFilter: ["href"],
+});
+watchBlocklist((channels) => {
+  setBlocklist(channels);
+  collect(document.documentElement);
+  scheduleFlush();
 });
 watchSettings((next) => {
   settings = next;

@@ -19,10 +19,18 @@
     }
   ],
   "permissions": [
-    "storage"
+    "storage",
+    "alarms"
   ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "AntiSlop"
-  }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "minimum_chrome_version": "110",
+  "host_permissions": [
+    "http://127.0.0.1/*"
+  ]
 }
