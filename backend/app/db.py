@@ -15,4 +15,4 @@ class Base(DeclarativeBase):
 
 
 def make_engine(settings: Settings):
-    return create_engine(str(settings.database_url), pool_pre_ping=True)
+    return create_engine(str(settings.database_url), pool_pre_ping=True, connect_args={"connect_timeout": 5})

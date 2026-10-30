@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 4: extension filtering, popup settings, the FastAPI skeleton, and PostgreSQL
-models/migrations are implemented. Community blocklist sync comes later.
+Stage 5: the backend serves approved-channel snapshots/deltas with ETags and an
+explicit seed importer. The extension still uses its bundled list until Stage 6.
 
 ## Product principles
 
@@ -111,7 +111,8 @@ cp .env.example .env
 .venv/bin/python -m uvicorn app.main:create_app --factory --reload --no-access-log
 ```
 
-Without a test database, expect `1 passed, 14 skipped`. The development API listens on
+Without a test database, PostgreSQL integration tests explicitly skip; health and
+database-unavailable checks still run. The development API listens on
 `http://127.0.0.1:8000`; `curl http://127.0.0.1:8000/health` returns `{"status":"ok"}`.
 Interactive API documentation is at `/docs`.
 
@@ -144,7 +145,7 @@ Compose is a local-development configuration with explicitly disposable database
 credentials. PostgreSQL data persists in a named volume across `down`/`up`.
 Redis is ephemeral at this stage. The API waits for each dependency's own health
 check before starting, but does not query either service yet. The SQLAlchemy models and initial Alembic migration are available;
-endpoints do not use them yet. Apply migrations explicitly before future data API work:
+the blocklist endpoint uses them. Apply migrations explicitly before serving blocklist requests:
 
 ```bash
 docker compose run --rm --no-deps backend alembic upgrade head
@@ -162,6 +163,9 @@ with uv, run from the repository root:
 uv pip compile backend/requirements.in --generate-hashes -o backend/requirements.txt
 uv pip compile backend/requirements-dev.in --generate-hashes -o backend/requirements-dev.txt
 ```
+
+See [blocklist sync and seed import](docs/blocklist-sync.md) for the Stage 5 API
+contract, ETags, removal notices, seed commands, and concurrency trade-offs.
 
 ## Architecture and development
 

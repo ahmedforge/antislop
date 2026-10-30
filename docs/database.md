@@ -50,9 +50,9 @@ transaction. No moderation endpoints or scoring logic are implemented yet.
 | `moderation_actions(appeal_id)` | Actions associated with an appeal. |
 
 A PostgreSQL trigger refreshes `channels.updated_at` with `clock_timestamp()` on
-any update, including raw SQL. Timestamps alone are not a complete synchronization
-protocol: later delta work must address concurrent commits, pagination and removal
-notifications. The timestamp trigger is explicit in the migration and covered by
+any insert or update, including raw SQL (insert coverage was added in migration `0002`). Timestamps alone are not a complete synchronization
+protocol: the [Stage 5 sync contract](blocklist-sync.md) explains concurrent commits, removal
+notifications, and current scale limitations. The timestamp trigger is explicit in the migration and covered by
 an integration test; Alembic's model comparison does not inspect trigger bodies.
 
 ## Migration workflow
@@ -68,7 +68,7 @@ docker compose run --rm --no-deps backend alembic check
 docker compose up -d --wait backend
 ```
 
-Expected revision: `0001 (head)`. `alembic check` reports no new upgrade operations.
+Expected revision after Stage 5: `0002 (head)`. `alembic check` reports no new upgrade operations.
 Migrations are a deliberate deployment step, not run by every API worker.
 For local CLI usage, run Alembic from `backend/` with `DATABASE_URL` pointing to
 an accessible PostgreSQL server. Compose's database port is intentionally internal.
