@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 1: the extension logs channel identities locally. Filtering and the backend
-are not implemented yet.
+Stage 2: local blocklist filtering and popup settings are implemented. The backend
+and community blocklist sync are not implemented yet.
 
 ## Product principles
 
@@ -57,29 +57,47 @@ npm run build
 Expected: TypeScript exits successfully and the build prints
 `Built extension/dist — ready to load unpacked.`
 
-1. Open `chrome://extensions`, enable **Developer mode**, and click **Load unpacked**.
-2. Select this repository's `extension/dist` folder.
-3. Open or reload YouTube, then open the page's DevTools Console and filter for
-   `[AntiSlop]` (enable Info-level messages).
-4. Check the home feed, a search results page, and a video's recommendation sidebar.
-   Scroll to load more cards and navigate between pages without reloading.
-5. Expect an observer startup message and channel objects such as
-   `{channelId: null, handle: "@example"}`. Actual values depend on visible cards.
-   Repeated mutations of the same card should not repeat its unchanged identity.
+Load `extension/dist` as an unpacked extension from `chrome://extensions` with
+Developer mode enabled, then reload YouTube. Open the AntiSlop toolbar popup to
+choose Blur (default), Collapse, or Hide and to enable or disable filtering.
+Settings are saved in `chrome.storage.sync` and apply to open tabs without reload.
+Hide mode displays a warning about silently hiding wrongly flagged channels.
 
-Rebuild after source changes, reload the extension on `chrome://extensions`, then
-reload the YouTube tab. There is no popup yet, and cards remain unchanged.
+The bundled `extension/src/blocklist.json` contains **synthetic test entries only**:
+`@antislop-demo-fixture` and `UC0000000000000000000000`. These are not community
+verdicts about real creators. Regular YouTube browsing may show no filtered cards.
+A vetted seed list and backend sync belong to later stages.
 
-The manifest injects the bundled content script at `document_idle`. The script
-scans existing cards and uses a MutationObserver for added nodes and changed
-channel links. Work is batched per animation frame; a WeakMap remembers each
-card's last channel identity while allowing removed cards to be garbage collected.
-All YouTube selectors live in `extension/src/selectors.ts`.
+Filtering uses reversible CSS classes. Blur and Collapse offer per-card reveal
+buttons; Hide uses `display: none`. Original YouTube nodes are never removed or
+wrapped. Blurred/hidden children are inert to prevent keyboard interaction; their
+previous inert state is restored when revealed or filtering is disabled. Reveal
+choices last for that card and channel in the current page, and reset if its
+channel identity changes or the page reloads.
 
-Only IDs and handles present in channel links are extracted. Legacy `/user/` and
-`/c/` URLs, cards without channel links, and unrecognized layouts are skipped.
-Selectors cover classic cards and newer lockups but need live verification against
-your YouTube layout. Stage 1 logs stay in page DevTools; nothing is sent to a server.
+The observer scans only changed subtrees during normal browsing and batches card
+updates per animation frame. A WeakMap stores card identity, reveal state, and
+existing controls to avoid duplicate UI while supporting reused cards. Settings
+changes rescan current cards. All YouTube selectors are in `extension/src/selectors.ts`.
+Legacy `/user/` and `/c/` links and cards without recognizable channel links are
+skipped. There are no content-script network requests or viewing-history logs.
+
+### Automated verification
+
+From `extension/`:
+
+```bash
+npm ci
+npx playwright install chromium
+npm test
+```
+
+The tests load the actual extension in isolated Chromium with real Chrome storage,
+and intercept YouTube requests to serve controlled fixture HTML. They check default
+blur, classic and nested cards, collapse, hide, live on/off, DOM preservation,
+individual reveal, delayed links, recycled cards, and settings persistence.
+This verifies extension behavior, not compatibility with every live YouTube layout.
+Rebuild and reload the unpacked extension after source changes.
 
 ## Architecture and development
 

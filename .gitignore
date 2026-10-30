@@ -39,3 +39,7 @@ dist/
 # Runtime files
 *.log
 *.pid
+
+# Browser test output
+playwright-report/
+test-results/

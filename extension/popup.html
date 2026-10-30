@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AntiSlop</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="popup.js" defer></script>
+</head>
+<body>
+  <h1>AntiSlop</h1>
+  <p>Choose how community-flagged channels appear.</p>
+  <label class="toggle"><input id="enabled" type="checkbox" checked disabled> Enable filtering</label>
+  <label for="mode">Display mode</label>
+  <select id="mode" disabled>
+    <option value="blur" selected>Blur (default)</option>
+    <option value="collapse">Collapse</option>
+    <option value="hide">Hide</option>
+  </select>
+  <p id="warning" role="note" hidden>Hide mode can silently hide wrongly flagged channels.</p>
+  <p id="status" role="status" aria-live="polite"></p>
+</body>
+</html>

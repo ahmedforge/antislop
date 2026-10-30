@@ -1,0 +1,84 @@
+import blocklist from "./blocklist.json";
+import type { Settings } from "./settings";
+
+export type Channel = { channelId: string | null; handle: string | null };
+const ids = new Set(blocklist.channelIds);
+const handles = new Set(blocklist.handles.map((handle) => handle.toLowerCase()));
+const classes = ["antislop-blur", "antislop-collapse", "antislop-hide"];
+type CardState = {
+  identity: string;
+  revealed: boolean;
+  panel: HTMLDivElement;
+  label: HTMLSpanElement;
+  button: HTMLButtonElement;
+  inertChildren: Map<HTMLElement, boolean>;
+};
+const states = new WeakMap<Element, CardState>();
+
+function restoreChildren(state: CardState): void {
+  for (const [child, wasInert] of state.inertChildren) child.inert = wasInert;
+  state.inertChildren.clear();
+}
+
+export function applyFilter(card: Element, channel: Channel | null, settings: Settings): void {
+  const identity = JSON.stringify(channel);
+  let state = states.get(card);
+  if (state && state.identity !== identity) {
+    restoreChildren(state);
+    state.identity = identity;
+    state.revealed = false;
+  }
+  const flagged = channel && (
+    (channel.channelId !== null && ids.has(channel.channelId)) ||
+    (channel.handle !== null && handles.has(channel.handle.toLowerCase()))
+  );
+  if (!flagged || !settings.enabled || state?.revealed) {
+    card.classList.remove(...classes);
+    if (state) {
+      state.panel.hidden = true;
+      restoreChildren(state);
+    }
+    return;
+  }
+  if (!state) {
+    const panel = document.createElement("div");
+    panel.className = "antislop-panel";
+    const label = document.createElement("span");
+    const button = document.createElement("button");
+    button.type = "button";
+    panel.append(label, button);
+    state = { identity, revealed: false, panel, label, button, inertChildren: new Map() };
+    states.set(card, state);
+    const savedState = state;
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      savedState.revealed = true;
+      card.classList.remove(...classes);
+      panel.hidden = true;
+      restoreChildren(savedState);
+    });
+  }
+  // YouTube may replace a card's children while keeping its outer element.
+  if (state.panel.parentElement !== card) card.append(state.panel);
+  for (const [child, wasInert] of state.inertChildren) {
+    if (child.parentElement !== card) {
+      child.inert = wasInert;
+      state.inertChildren.delete(child);
+    }
+  }
+  for (const child of card.children) {
+    if (!(child instanceof HTMLElement) || child === state.panel) continue;
+    if (!state.inertChildren.has(child)) state.inertChildren.set(child, child.inert);
+    child.inert = true; // Blurred links must not remain keyboard-interactive.
+  }
+  for (const mode of ["blur", "collapse", "hide"] as const) {
+    card.classList.toggle(`antislop-${mode}`, settings.mode === mode);
+  }
+  state.panel.hidden = settings.mode === "hide";
+  const label = settings.mode === "collapse" ? "Hidden: AI channel" : "Flagged as AI content by the community";
+  const button = settings.mode === "collapse" ? "Show" : "Show anyway";
+  // Avoid mutations when the observer revisits our own panel insertion.
+  if (state.label.textContent !== label) state.label.textContent = label;
+  if (state.button.textContent !== button) state.button.textContent = button;
+}

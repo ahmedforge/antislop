@@ -7,8 +7,8 @@ const dist = new URL("dist/", root);
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 await build({
-  entryPoints: [new URL("src/content.ts", root).pathname],
-  outfile: new URL("content.js", dist).pathname,
+  entryPoints: ["content", "popup"].map((name) => new URL(`src/${name}.ts`, root).pathname),
+  outdir: dist.pathname,
   bundle: true,
   format: "iife",
   platform: "browser",
@@ -16,5 +16,7 @@ await build({
   sourcemap: true,
   logLevel: "info",
 });
-await copyFile(new URL("manifest.json", root), new URL("manifest.json", dist));
+for (const file of ["manifest.json", "content.css", "popup.html", "popup.css"]) {
+  await copyFile(new URL(file, root), new URL(file, dist));
+}
 console.log("Built extension/dist — ready to load unpacked.");

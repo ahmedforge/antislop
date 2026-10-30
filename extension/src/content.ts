@@ -1,6 +1,8 @@
 import { SELECTORS } from "./selectors";
 
-type Channel = { channelId: string | null; handle: string | null };
+import { applyFilter, type Channel } from "./filter";
+import { DEFAULT_SETTINGS, watchSettings } from "./settings";
+let settings = { ...DEFAULT_SETTINGS };
 
 function extractChannel(card: Element): Channel | null {
   const channel: Channel = { channelId: null, handle: null };
@@ -26,9 +28,6 @@ function extractChannel(card: Element): Channel | null {
   return channel.channelId || channel.handle ? channel : null;
 }
 
-// Weak keys allow removed cards to be garbage collected. Store the identity,
-// rather than a permanent "processed" marker: YouTube can reuse DOM elements.
-const seen = new WeakMap<Element, string>();
 const pending = new Set<Element>();
 let scheduled = false;
 
@@ -54,14 +53,7 @@ function flush(): void {
   for (const card of pending) {
     if (!card.isConnected) continue;
     const channel = extractChannel(card);
-    if (!channel) {
-      seen.delete(card); // Retry when a late channel link arrives.
-      continue;
-    }
-    const identity = JSON.stringify(channel);
-    if (seen.get(card) === identity) continue;
-    seen.set(card, identity);
-    console.log("[AntiSlop] channel", channel);
+    applyFilter(card, channel, settings);
   }
   pending.clear();
 }
@@ -92,6 +84,10 @@ observer.observe(document.documentElement, {
   attributes: true,
   attributeFilter: ["href"],
 });
+watchSettings((next) => {
+  settings = next;
+  collect(document.documentElement);
+  scheduleFlush();
+});
 collect(document.documentElement);
 scheduleFlush();
-console.log("[AntiSlop] observing YouTube cards (local diagnostics only)");

@@ -1,0 +1,10 @@
+:root { font: 14px/1.5 system-ui, sans-serif; color: #17202e; background: #f8fafc; }
+body { width: 280px; margin: 0; padding: 20px; }
+h1 { margin: 0; font-size: 22px; }
+p { color: #475569; }
+label { display: block; font-weight: 600; }
+.toggle { margin: 20px 0; }
+input { accent-color: #0369a1; }
+select { box-sizing: border-box; width: 100%; padding: 8px; margin-top: 6px; font: inherit; }
+#warning { padding: 10px; border: 1px solid #a16207; border-radius: 6px; background: #fef3c7; color: #713f12; }
+#status { min-height: 1.5em; margin-bottom: 0; }
