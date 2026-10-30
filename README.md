@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 2: local blocklist filtering and popup settings are implemented. The backend
-and community blocklist sync are not implemented yet.
+Stage 3: extension filtering, popup settings, and the FastAPI backend skeleton
+are implemented. Database models and community blocklist sync come later.
 
 ## Product principles
 
@@ -29,14 +29,13 @@ and community blocklist sync are not implemented yet.
 ```text
 antislop/
 ├── extension/       # TypeScript Chrome MV3 extension
-├── backend/         # Python API, migrations, and tests (future stages)
+├── backend/         # FastAPI app and tests; migrations come later
 ├── docs/            # Architecture and contributor documentation
+├── docker-compose.yml # Local API, PostgreSQL, and Redis
 ├── .gitignore
 ├── LICENSE
 └── README.md
 ```
-
-A root `docker-compose.yml` will be added in Stage 3.
 
 ## Planned stack
 
@@ -98,6 +97,63 @@ blur, classic and nested cards, collapse, hide, live on/off, DOM preservation,
 individual reveal, delayed links, recycled cards, and settings persistence.
 This verifies extension behavior, not compatibility with every live YouTube layout.
 Rebuild and reload the unpacked extension after source changes.
+
+## Backend development
+
+Python 3.12 is required. From the repository root:
+
+```bash
+python3.12 -m venv backend/.venv
+backend/.venv/bin/python -m pip install --require-hashes -r backend/requirements-dev.txt
+cd backend
+cp .env.example .env
+.venv/bin/python -m pytest -q
+.venv/bin/python -m uvicorn app.main:create_app --factory --reload --no-access-log
+```
+
+Expected test result: `1 passed`. The development API listens on
+`http://127.0.0.1:8000`; `curl http://127.0.0.1:8000/health` returns `{"status":"ok"}`.
+Interactive API documentation is at `/docs`.
+
+Settings are read from environment variables or `backend/.env` when running from
+`backend/`. Environment variables take precedence. Supported settings are
+`APP_NAME`, `ENVIRONMENT` (`development`, `test`, or `production`), `DATABASE_URL`,
+and `REDIS_URL`. Connection URLs are validated but not used to connect yet.
+The `/health` endpoint is a liveness check, not database/cache readiness.
+Request access logging is disabled in the documented launch commands and image.
+
+### Local containers
+
+From the repository root:
+
+```bash
+docker compose up --build -d --wait
+docker compose ps
+curl --fail http://127.0.0.1:8000/health
+docker compose exec postgres pg_isready -U antislop -d antislop
+docker compose exec redis redis-cli ping
+docker compose down
+```
+
+Expected: all three services healthy, `{"status":"ok"}`, PostgreSQL
+`accepting connections`, and Redis `PONG`. Set `API_PORT=8001` before the Compose
+command if port 8000 is occupied. Only the API port is published, on loopback;
+PostgreSQL and Redis are available on the internal Compose network.
+
+Compose is a local-development configuration with explicitly disposable database
+credentials. PostgreSQL data persists in a named volume across `down`/`up`.
+Redis is ephemeral at this stage. The API waits for each dependency's own health
+check before starting, but does not query either service yet. SQLAlchemy, Alembic,
+and data access are introduced in Stage 4.
+
+`requirements.in` and `requirements-dev.in` declare dependency ranges; the matching
+`.txt` files pin all resolved packages and hashes. To intentionally refresh them
+with uv, run from the repository root:
+
+```bash
+uv pip compile backend/requirements.in --generate-hashes -o backend/requirements.txt
+uv pip compile backend/requirements-dev.in --generate-hashes -o backend/requirements-dev.txt
+```
 
 ## Architecture and development
 
