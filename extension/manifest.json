@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "AntiSlop",
+  "version": "0.1.0",
+  "description": "Community channel filtering for YouTube. Stage 1: local console diagnostics only.",
+  "content_scripts": [{
+    "matches": ["https://www.youtube.com/*", "https://youtube.com/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }]
+}
