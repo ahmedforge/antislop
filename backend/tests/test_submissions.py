@@ -16,7 +16,7 @@ CHANNEL = "UC" + "a" * 22
 
 
 @pytest.fixture
-def api(migrated_db):
+def api(migrated_db, redis_state):
     engine, _ = migrated_db
     with TestClient(create_app()) as client:
         yield client, engine
@@ -137,7 +137,7 @@ def test_unknown_or_nonapproved_appeal_creates_no_install(api):
 
 
 @pytest.mark.parametrize("path", ["reports", "appeals"])
-def test_unavailable_database_is_retryable_and_does_not_expose_credentials(path):
+def test_unavailable_database_is_retryable_and_does_not_expose_credentials(path, redis_state):
     with TestClient(create_app(Settings(database_url="postgresql+psycopg://user:secret@127.0.0.1:1/missing"))) as client:
         response = client.post(f"/v1/{path}", json=payload())
         assert response.status_code == 503

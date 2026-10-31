@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 7: explicit channel reports and appeals are available in the extension and
-API. Filtering uses a local synced cache; reports do not automatically block channels.
+Stage 8: reports and appeals have Redis-backed installation/IP rate limits.
+Filtering uses a local synced cache; reports do not automatically block channels.
 
 ## Product principles
 
@@ -113,11 +113,12 @@ backend/.venv/bin/python -m pip install --require-hashes -r backend/requirements
 cd backend
 cp .env.example .env
 .venv/bin/python -m pytest -q
-.venv/bin/python -m uvicorn app.main:create_app --factory --reload --no-access-log
+.venv/bin/python -m uvicorn app.main:create_app --factory --reload --no-access-log --no-proxy-headers
 ```
 
 Without a test database, PostgreSQL integration tests explicitly skip; health and
-database-unavailable checks still run. The development API listens on
+other non-integration checks still run. Submission integration tests also require
+`TEST_REDIS_URL`; see [rate-limit verification](docs/rate-limits.md). The development API listens on
 `http://127.0.0.1:8000`; `curl http://127.0.0.1:8000/health` returns `{"status":"ok"}`.
 Interactive API documentation is at `/docs`.
 
@@ -174,6 +175,9 @@ contract, ETags, removal notices, seed commands, and concurrency trade-offs.
 
 See [reports and appeals](docs/reports-and-appeals.md) for explicit submission
 behavior, stable-channel-ID requirements, deduplication, and anonymous install-ID limits.
+
+See [rate limits](docs/rate-limits.md) for token-bucket settings, retry semantics,
+Redis failure behavior, and proxy/IP considerations.
 
 ## Architecture and development
 

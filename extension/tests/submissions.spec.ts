@@ -13,7 +13,7 @@ const html = `<ytd-video-renderer id="new"><div><a href="/channel/${UNLISTED}">N
 <style>ytd-video-renderer{display:block;width:400px;margin:12px}ytd-video-renderer>div{min-height:180px}</style>`;
 let server: Server, context: BrowserContext, popup: Page, page: Page, profile: string;
 let posts: { path: string; body: any; headers: any }[], stored: Map<string,string>;
-let fail: "none" | "503" | "disconnect-after-commit";
+let fail: "none" | "429" | "503" | "disconnect-after-commit";
 async function openBrowser() {
   context = await chromium.launchPersistentContext(profile, { channel:"chromium",headless:true,args:[`--disable-extensions-except=${root}`,`--load-extension=${root}`] });
   await context.route("https://www.youtube.com/**", route=>route.fulfill({contentType:"text/html",body:html}));
@@ -39,6 +39,7 @@ test.beforeAll(async()=>{
     }
     let raw=""; req.on("data",data=>raw+=data); req.on("end",()=>{
       const body=JSON.parse(raw); posts.push({path:req.url!,body,headers:req.headers});
+      if(fail === "429") {res.writeHead(429,{"Retry-After":"42"}).end();return;}
       if(fail === "503") {res.writeHead(503).end();return;}
       const key=`${req.url}:${body.install_id}:${body.channel_id}`;
       const created=!stored.has(key); if(created)stored.set(key,randomUUID());
@@ -148,4 +149,18 @@ test("reused cards update the report target and installation ID survives browser
   await dialog.getByRole("button",{name:"Submit report",exact:true}).click();
   await expect(dialog.getByRole("status")).toHaveText("Report submitted for review.");
   expect(posts.at(-1)!.body.install_id).toBe(id);
+});
+
+
+test("429 displays retry timing and retains the draft",async()=>{
+  fail="429";
+  const dialog=await openReport();
+  await dialog.getByLabel("Reason",{exact:true}).fill("Preserve rate-limited draft");
+  await dialog.getByRole("button",{name:"Submit report",exact:true}).click();
+  await expect(dialog.getByRole("status")).toHaveText("Too many submissions. Try again in 42 seconds. Your text has been kept.");
+  await expect(dialog.getByLabel("Reason",{exact:true})).toHaveValue("Preserve rate-limited draft");
+  expect(stored.size).toBe(0);
+  fail="none";
+  await dialog.getByRole("button",{name:"Submit report",exact:true}).click();
+  await expect(dialog.getByRole("status")).toHaveText("Report submitted for review.");
 });

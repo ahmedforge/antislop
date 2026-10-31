@@ -30,3 +30,23 @@ def migrated_db(monkeypatch):
             connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         root.dispose()
 
+
+
+@pytest.fixture
+def redis_state(monkeypatch):
+    from redis import Redis
+    url = os.environ.get("TEST_REDIS_URL")
+    if not url:
+        pytest.skip("Set TEST_REDIS_URL to run submission/rate-limit tests")
+    client = Redis.from_url(url, decode_responses=True)
+    client.ping()
+    prefix = f"antislop-test:{uuid4().hex}"
+    monkeypatch.setenv("REDIS_URL", url)
+    monkeypatch.setenv("RATE_LIMIT_NAMESPACE", prefix)
+    try:
+        yield client
+    finally:
+        keys = list(client.scan_iter(match=f"{prefix}:*"))
+        if keys:
+            client.delete(*keys)
+        client.close()

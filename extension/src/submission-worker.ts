@@ -48,6 +48,11 @@ async function submit(message: SubmissionMessage): Promise<SubmissionReply> {
         body: JSON.stringify({ install_id: id, channel_id: message.channelId, reason: message.reason.trim() }),
         credentials: "omit", referrerPolicy: "no-referrer", redirect: "error", cache: "no-store", signal: controller.signal,
       });
+      if (response.status === 429) {
+        const seconds = Number(response.headers.get("Retry-After"));
+        const wait = Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : 60;
+        return { ok: false, message: `Too many submissions. Try again in ${wait} seconds. Your text has been kept.` };
+      }
       if (response.status === 404 || response.status === 409) return { ok: false, message: "This channel is no longer available for an appeal. Your text has been kept." };
       if (response.status !== 200 && response.status !== 201) throw new Error("Submission unavailable");
       const data: unknown = await response.json();

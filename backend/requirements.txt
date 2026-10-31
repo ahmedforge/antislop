@@ -503,6 +503,10 @@ python-dotenv==1.2.4 \
     --hash=sha256:42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc \
     --hash=sha256:f0d53e69935a851c0dcc78f3ab7aaccd8cabef0b92382b576b824212902873c0
     # via pydantic-settings
+redis==7.4.1 \
+    --hash=sha256:1a1df5067062cf7cbe677994e391f8ee0840f499d370f1a71266e0dd3aa9308e \
+    --hash=sha256:1fa4647af1c5e93a2c685aa248ee44cce092691146d41390518dabe9a99839b0
+    # via -r backend/requirements.in
 sqlalchemy==2.0.55 \
     --hash=sha256:01a3906c85e8bd44b90ae99452f04cc0b2c265ee330b5dd6a4e177952efc3d69 \
     --hash=sha256:01c1a72f1f2f5c107eb8f1c12a08d56527a393b191b2195edbbaaa028bcde04b \

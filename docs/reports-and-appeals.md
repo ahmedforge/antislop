@@ -3,7 +3,8 @@
 A report is an explicit submission about an entire channel, not a video or an ML
 detection result. New channels remain `unreviewed`. Reports do not change score,
 reputation, status, or the local blocklist. Appeals remain `open` until moderation.
-Rate limiting is Stage 8; scoring and authenticated admin decisions are Stage 9.
+Stage 8 applies shared installation/IP token buckets before writes; scoring and
+authenticated admin decisions remain Stage 9. See [rate limits](rate-limits.md).
 
 ## API contract
 
@@ -112,7 +113,7 @@ Tests (with a PostgreSQL test URL configured as described in `database.md`):
 
 ```bash
 cd backend
-TEST_DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:PORT/TEST_DB .venv/bin/python -m pytest -q
+TEST_DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:PORT/TEST_DB TEST_REDIS_URL=redis://HOST:REDIS_PORT/0 .venv/bin/python -m pytest -q
 cd ../extension
 npm test
 ```

@@ -1,23 +1,18 @@
 """Explicit user submissions; no automatic approval or reputation changes."""
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field, UUID4
+from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import Appeal, Channel, Install, Report
+from app.schemas import Submission
+from app.rate_limit import enforce_submission_limits
 
 router = APIRouter(prefix="/v1", tags=["submissions"])
-
-
-class Submission(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-    install_id: UUID4
-    channel_id: str = Field(pattern=r"^UC[A-Za-z0-9_-]{22}$")
-    reason: str = Field(min_length=1, max_length=2000)
 
 
 class SubmissionResult(BaseModel):
@@ -37,7 +32,7 @@ def unavailable() -> HTTPException:
                          headers={"Retry-After": "5", "Cache-Control": "no-store"})
 
 
-@router.post("/reports", response_model=SubmissionResult, status_code=201, responses={200: {}, 503: {}})
+@router.post("/reports", response_model=SubmissionResult, status_code=201, dependencies=[Depends(enforce_submission_limits)], responses={200: {}, 429: {}, 503: {}})
 def report(payload: Submission, request: Request) -> JSONResponse:
     try:
         with request.app.state.engine.begin() as connection:
@@ -65,7 +60,7 @@ def report(payload: Submission, request: Request) -> JSONResponse:
         raise unavailable() from None
 
 
-@router.post("/appeals", response_model=SubmissionResult, status_code=201, responses={200: {}, 404: {}, 409: {}, 503: {}})
+@router.post("/appeals", response_model=SubmissionResult, status_code=201, dependencies=[Depends(enforce_submission_limits)], responses={200: {}, 404: {}, 409: {}, 429: {}, 503: {}})
 def appeal(payload: Submission, request: Request) -> JSONResponse:
     try:
         with request.app.state.engine.begin() as connection:
