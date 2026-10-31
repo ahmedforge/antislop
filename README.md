@@ -5,7 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 8: reports and appeals have Redis-backed installation/IP rate limits.
+Stage 9: reputation-weighted reports feed a review queue; authenticated admins
+approve/reject channels and resolve appeals with an audit trail.
 Filtering uses a local synced cache; reports do not automatically block channels.
 
 ## Product principles
@@ -125,7 +126,8 @@ Interactive API documentation is at `/docs`.
 Settings are read from environment variables or `backend/.env` when running from
 `backend/`. Environment variables take precedence. Supported settings are
 `APP_NAME`, `ENVIRONMENT` (`development`, `test`, or `production`), `DATABASE_URL`,
-and `REDIS_URL`. Connection URLs are validated but not used to connect yet.
+`REDIS_URL`, rate-limit settings, `REVIEW_THRESHOLD`, and `ADMIN_API_KEY`.
+Connection URLs are validated; database and Redis connections are opened on demand.
 The `/health` endpoint is a liveness check, not database/cache readiness.
 Request access logging is disabled in the documented launch commands and image.
 
@@ -150,7 +152,7 @@ PostgreSQL and Redis are available on the internal Compose network.
 Compose is a local-development configuration with explicitly disposable database
 credentials. PostgreSQL data persists in a named volume across `down`/`up`.
 Redis is ephemeral at this stage. The API waits for each dependency's own health
-check before starting, but does not query either service yet. The SQLAlchemy models and initial Alembic migration are available;
+check before starting. The SQLAlchemy models and Alembic migrations are available;
 the blocklist endpoint uses them. Apply migrations explicitly before serving blocklist requests:
 
 ```bash
@@ -178,6 +180,9 @@ behavior, stable-channel-ID requirements, deduplication, and anonymous install-I
 
 See [rate limits](docs/rate-limits.md) for token-bucket settings, retry semantics,
 Redis failure behavior, and proxy/IP considerations.
+
+See [scoring and moderation](docs/moderation.md) for admin setup, review queues,
+reputation scoring, appeal decisions, and brigading limitations.
 
 ## Architecture and development
 

@@ -47,7 +47,7 @@ def test_report_creates_unreviewed_channel_install_and_report_atomically(api):
     with Session(engine) as session:
         channel = session.scalar(select(Channel))
         assert channel.youtube_channel_id == CHANNEL
-        assert channel.status == "unreviewed" and channel.score == Decimal("0")
+        assert channel.status == "unreviewed" and channel.score == Decimal("1")
         assert session.scalar(select(Install)).reputation == Decimal("1")
         report = session.scalar(select(Report))
         assert report.reason == "Repetitive generated narration"
@@ -68,7 +68,7 @@ def test_report_retry_keeps_original_reason_and_moderation(api):
     with Session(engine) as session:
         assert session.scalar(select(Report.reason)) == body["reason"]
         channel = session.scalar(select(Channel))
-        assert channel.status == "approved" and channel.score == Decimal("7")
+        assert channel.status == "approved" and channel.score == Decimal("1")
         assert channel.handle == "@fixture"
 
 

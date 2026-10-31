@@ -1,10 +1,11 @@
 # Reports and appeals (Stage 7)
 
 A report is an explicit submission about an entire channel, not a video or an ML
-detection result. New channels remain `unreviewed`. Reports do not change score,
-reputation, status, or the local blocklist. Appeals remain `open` until moderation.
-Stage 8 applies shared installation/IP token buckets before writes; scoring and
-authenticated admin decisions remain Stage 9. See [rate limits](rate-limits.md).
+detection result. New channels start `unreviewed`; Stage 9 computes a weighted
+score and moves them to `pending_review` at the threshold. Reports never approve
+a channel or change reputation. Appeals remain `open` until moderation.
+See [moderation](moderation.md) for scoring and admin decisions, and
+[rate limits](rate-limits.md) for the shared installation/IP token buckets.
 
 ## API contract
 
@@ -42,7 +43,8 @@ reason is preserved. Responses use `Cache-Control: no-store`.
 - Database failure/timeout returns a generic `503` with `Retry-After: 5`; credentials,
   connection URLs, and SQL details are not returned. Writes are transactional.
 
-No list/read endpoint exposes other users' reports, reasons, or installation IDs.
+No public list/read endpoint exposes other users' reports, reasons, or installation IDs.
+Authenticated admins can review report and appeal reasons.
 No admin action is recorded for a public submission because it is not a moderation
 decision. The existing tables preserve that distinction.
 
@@ -90,7 +92,7 @@ This is pseudonymous deduplication, not identity verification or authentication.
 The backend can associate explicit reports and appeals carrying the same ID.
 Reinstalling, clearing storage, or using another browser profile can produce a new
 ID; API callers can invent UUIDs. Someone knowing an ID could also reuse it. Do not
-interpret one install as one human or claim this prevents brigading. Later rate
+interpret one install as one human or claim this prevents brigading. Rate
 limits and moderation reduce abuse; no fingerprints or watch-history telemetry
 are introduced here.
 

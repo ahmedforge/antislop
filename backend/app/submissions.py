@@ -1,10 +1,11 @@
 """Explicit user submissions; no automatic approval or reputation changes."""
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -44,11 +45,25 @@ def report(payload: Submission, request: Request) -> JSONResponse:
             ).on_conflict_do_nothing(index_elements=["youtube_channel_id"]).returning(Channel.id))
             if channel_id is None:
                 channel_id = connection.scalar(select(Channel.id).where(Channel.youtube_channel_id == payload.channel_id))
+            # Serialize scoring and moderation for this channel before inserting a report.
+            channel = connection.execute(select(Channel.id, Channel.status).where(
+                Channel.id == channel_id,
+            ).with_for_update()).one()
             connection.execute(insert(Install).values(id=payload.install_id).on_conflict_do_nothing(index_elements=["id"]))
             identifier = connection.scalar(insert(Report).values(
                 channel_id=channel_id, install_id=payload.install_id, reason=payload.reason,
             ).on_conflict_do_nothing(constraint="uq_reports_install_channel").returning(Report.id))
             created = identifier is not None
+            if created:
+                score = connection.scalar(select(func.coalesce(func.sum(Install.reputation), 0)).select_from(
+                    Report.__table__.join(Install, Report.install_id == Install.id)
+                ).where(Report.channel_id == channel_id))
+                # Saturate at the schema's maximum rather than rejecting valid reports.
+                score = min(score, Decimal("99999999.9999"))
+                status = channel.status
+                if status == "unreviewed" and score >= request.app.state.settings.review_threshold:
+                    status = "pending_review"
+                connection.execute(update(Channel).where(Channel.id == channel_id).values(score=score, status=status))
             if identifier is None:
                 identifier = connection.scalar(select(Report.id).where(
                     Report.channel_id == channel_id, Report.install_id == payload.install_id,
