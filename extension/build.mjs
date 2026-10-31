@@ -20,7 +20,7 @@ await build({
   format: "iife",
   platform: "browser",
   target: "chrome110",
-  sourcemap: true,
+  sourcemap: !process.argv.includes("--release"),
   logLevel: "info",
 });
 for (const file of ["content.css", "popup.html", "popup.css"]) {

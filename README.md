@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 11: aggregate Prometheus metrics and a provisioned Grafana dashboard
-cover API latency, reports, syncs, approved channels, and rate-limit rejections.
+Stage 12 complete: local MVP with tests, monitoring, documentation, and extension
+ZIP packaging. The public API and Chrome Web Store listing are not deployed.
 Filtering uses a local synced cache; reports do not automatically block channels.
 
 ## Product principles
@@ -32,13 +32,15 @@ antislop/
 ├── extension/       # TypeScript Chrome MV3 extension
 ├── backend/         # FastAPI app, database models, migrations, and tests
 ├── docs/            # Architecture and contributor documentation
-├── docker-compose.yml # Local API, PostgreSQL, and Redis
+├── monitoring/      # Prometheus configuration and Grafana dashboard
+├── scripts/         # Release packaging
+├── docker-compose.yml # Local API, PostgreSQL, Redis, Prometheus, Grafana
 ├── .gitignore
 ├── LICENSE
 └── README.md
 ```
 
-## Planned stack
+## Stack
 
 - Extension: TypeScript, Manifest V3, esbuild, no UI framework.
 - Backend: Python 3.12, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, Redis, pytest.
@@ -137,12 +139,14 @@ From the repository root:
 
 ```bash
 docker compose up --build -d --wait
+docker compose exec -T backend alembic upgrade head
 docker compose ps
 curl --fail http://127.0.0.1:8000/health
 docker compose exec postgres pg_isready -U antislop -d antislop
 docker compose exec redis redis-cli ping
-docker compose down
 ```
+
+Stop the local stack later with `docker compose down` (retains database volumes).
 
 Expected: all five services healthy, `{"status":"ok"}`, PostgreSQL
 `accepting connections`, and Redis `PONG`. Set `API_PORT=8001` before the Compose
@@ -192,8 +196,40 @@ dashboard, metric definitions, privacy boundaries, and monitoring verification.
 
 ## Architecture and development
 
-Architecture details, contribution instructions, privacy documentation, and
-release packaging will be added in the corresponding stages.
+```mermaid
+flowchart LR
+    Y[YouTube cards] --> C[Content script: local channel lookup]
+    S[Chrome synced display preferences] --> C
+    L[Chrome local blocklist cache] --> C
+    W[Background service worker] -->|hourly delta + ETag| A[FastAPI]
+    W -->|save approved channels and removals| L
+    C -->|explicit report or appeal only| W
+    W -->|install ID + channel ID + reason| A
+    A --> P[(PostgreSQL)]
+    A -->|submission token buckets| R[(Redis)]
+    M[Admin with API key] -->|review and decisions| A
+    Q[Prometheus] -->|scrape aggregate metrics| A
+    G[Grafana] --> Q
+```
+
+Browsing lookups stay in the tab. Reports add evidence; the score can trigger
+review, but only an admin approval adds a channel to the downloaded blocklist.
+Accepted appeals remove channels through the next delta. The API uses one worker
+per container for its current in-process metrics registry.
+
+Read [Privacy](PRIVACY.md) for storage, transmission, and retention details,
+[Contributing](CONTRIBUTING.md) for development rules and verification, and
+[Release preparation](docs/release.md) for ZIP packaging and deployment boundaries.
+
+For a local test ZIP (requires Python 3.12 and installed extension dependencies):
+
+```bash
+python3 scripts/package_extension.py --local
+```
+
+Expected: `dist/antislop-0.1.0-local.zip` and its SHA-256 checksum. This rebuilds
+`extension/dist` without source maps. For a store candidate, configure your own
+deployed HTTPS API as described in the release guide.
 
 ## License
 

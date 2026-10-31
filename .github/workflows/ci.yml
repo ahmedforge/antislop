@@ -87,3 +87,5 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Test extension in Chromium
         run: npm test
+      - name: Verify local release packaging
+        run: python3 ../scripts/package_extension.py --local

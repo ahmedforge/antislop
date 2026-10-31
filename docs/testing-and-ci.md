@@ -8,7 +8,8 @@ It has two independent jobs, each with a 15-minute timeout:
   PostgreSQL 16 and Redis 7 services. Pytest measures statement and branch coverage
   and requires a combined score of at least 90% across `app`.
 - **Extension checks:** Node.js 22, `npm ci`, TypeScript/build checks, and all
-  Playwright Chromium tests using fixture pages and the local fake sync API.
+  Playwright Chromium tests using fixture pages and the local fake sync API,
+  followed by a clean local release ZIP build.
 
 The workflow uses a read-only repository token, disables stored checkout
 credentials, pins GitHub-maintained actions to commit SHAs, and cancels superseded
