@@ -61,6 +61,8 @@ class Appeal(Base):
         Index("ix_appeals_status_created_at", "status", "created_at"),
         Index("ix_appeals_channel_id", "channel_id"),
         Index("ix_appeals_install_id", "install_id"),
+        Index("uq_appeals_open_install_channel", "install_id", "channel_id", unique=True,
+              postgresql_where=text("status = 'open' AND install_id IS NOT NULL")),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     channel_id: Mapped[UUID] = mapped_column(ForeignKey("channels.id", ondelete="RESTRICT"))

@@ -1,12 +1,27 @@
+import { openSubmission } from "./submission-ui";
 import type { Entry } from "./blocklist-cache";
 import type { Settings } from "./settings";
 
 export type Channel = { channelId: string | null; handle: string | null };
 let ids = new Set<string>();
 let handles = new Set<string>();
+let handleIds = new Map<string, Set<string>>();
 export function setBlocklist(channels: Entry[]): void {
   ids = new Set(channels.map((entry) => entry.youtube_channel_id));
   handles = new Set(channels.flatMap((entry) => entry.handle ? [entry.handle.toLowerCase()] : []));
+  handleIds = new Map();
+  for (const entry of channels) {
+    if (!entry.handle) continue;
+    const key = entry.handle.toLowerCase();
+    const matches = handleIds.get(key) ?? new Set<string>();
+    matches.add(entry.youtube_channel_id);
+    handleIds.set(key, matches);
+  }
+}
+export function resolveChannelId(channel: Channel | null): string | null {
+  if (channel?.channelId) return channel.channelId;
+  const matches = channel?.handle ? handleIds.get(channel.handle.toLowerCase()) : undefined;
+  return matches?.size === 1 ? [...matches][0] : null;
 }
 const classes = ["antislop-blur", "antislop-collapse", "antislop-hide"];
 type CardState = {
@@ -15,6 +30,8 @@ type CardState = {
   panel: HTMLDivElement;
   label: HTMLSpanElement;
   button: HTMLButtonElement;
+  appeal: HTMLButtonElement;
+  channel: Channel | null;
   inertChildren: Map<HTMLElement, boolean>;
 };
 const states = new WeakMap<Element, CardState>();
@@ -32,6 +49,7 @@ export function applyFilter(card: Element, channel: Channel | null, settings: Se
     state.identity = identity;
     state.revealed = false;
   }
+  if (state) state.channel = channel;
   const flagged = channel && (
     channel.channelId !== null
       ? ids.has(channel.channelId)
@@ -51,10 +69,17 @@ export function applyFilter(card: Element, channel: Channel | null, settings: Se
     const label = document.createElement("span");
     const button = document.createElement("button");
     button.type = "button";
-    panel.append(label, button);
-    state = { identity, revealed: false, panel, label, button, inertChildren: new Map() };
+    const appeal = document.createElement("button");
+    appeal.type = "button";
+    appeal.textContent = "This is wrong";
+    panel.append(label, button, appeal);
+    state = { identity, revealed: false, panel, label, button, appeal, channel, inertChildren: new Map() };
     states.set(card, state);
     const savedState = state;
+    appeal.addEventListener("click", (event) => {
+      event.preventDefault(); event.stopPropagation();
+      if (event.isTrusted && savedState.channel) openSubmission("appeal", { ...savedState.channel }, resolveChannelId(savedState.channel));
+    });
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();

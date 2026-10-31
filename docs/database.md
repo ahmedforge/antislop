@@ -31,7 +31,8 @@ Foreign keys use `RESTRICT` so deleting a channel, installation, or appeal canno
 silently erase report or moderation history. This is not an immutable audit log:
 the database owner can still change records. Future admin endpoints must treat
 moderation actions as append-only and update status plus audit action in one
-transaction. No moderation endpoints or scoring logic are implemented yet.
+transaction. Stage 7 adds public report/appeal submission endpoints; admin moderation endpoints
+and scoring logic are not implemented yet.
 
 ## Indexes
 
@@ -43,6 +44,7 @@ transaction. No moderation endpoints or scoring logic are implemented yet.
 | `channels(status, updated_at)` | Review queues and approved-channel scans. |
 | Unique `reports(install_id, channel_id)` | Deduplication and reports by an installation; no redundant install-only index. |
 | `reports(channel_id, created_at)` | Reports and scoring inputs for a channel in time order. |
+| Unique open `appeals(install_id, channel_id)` | Stage 7 partial index prevents duplicate open appeals while retaining resolved history. |
 | `appeals(status, created_at)` | Oldest open appeals first. |
 | `appeals(channel_id)` and `appeals(install_id)` | Channel appeal history and installation references. |
 | Unique `appeals(id, channel_id)` | Required target for the composite foreign key validating an action's appeal/channel pair. |
@@ -68,7 +70,7 @@ docker compose run --rm --no-deps backend alembic check
 docker compose up -d --wait backend
 ```
 
-Expected revision after Stage 5: `0002 (head)`. `alembic check` reports no new upgrade operations.
+Expected revision after Stage 7: `0003 (head)`. `alembic check` reports no new upgrade operations.
 Migrations are a deliberate deployment step, not run by every API worker.
 For local CLI usage, run Alembic from `backend/` with `DATABASE_URL` pointing to
 an accessible PostgreSQL server. Compose's database port is intentionally internal.

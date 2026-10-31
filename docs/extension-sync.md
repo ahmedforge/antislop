@@ -39,8 +39,9 @@ request URL. Display mode and on/off remain separately in `chrome.storage.sync`.
   There is no hardcoded fallback or automatic seed import.
 
 Only the API origin is granted host permission. Fetch uses `credentials: omit`,
-`referrerPolicy: no-referrer`, and rejects redirects. Requests include no browsing
-URLs, video IDs, channel lookups, or installation IDs. The server naturally sees
+`referrerPolicy: no-referrer`, and rejects redirects. Blocklist GET requests include no browsing
+URLs, video IDs, channel lookups, or installation IDs. Stage 7 explicit report/appeal
+POST requests separately include the user-selected channel, reason, and installation ID. The server naturally sees
 network metadata such as the connection's source IP, but no viewing activity.
 Diagnostic failures log a generic message without identities or response bodies.
 

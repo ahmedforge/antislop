@@ -1,3 +1,4 @@
+import "./submission-worker";
 import { parseCache, parseDelta, type Cache, type Entry } from "./blocklist-cache";
 import { BLOCKLIST_URL, CACHE_KEY, SYNC_ALARM, SYNC_PERIOD_MINUTES } from "./config";
 

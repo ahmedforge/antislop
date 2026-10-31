@@ -1,7 +1,8 @@
+import { updateReportControl } from "./submission-ui";
 import { watchBlocklist } from "./blocklist-cache";
 import { SELECTORS } from "./selectors";
 
-import { applyFilter, setBlocklist, type Channel } from "./filter";
+import { applyFilter, setBlocklist, resolveChannelId, type Channel } from "./filter";
 import { DEFAULT_SETTINGS, watchSettings } from "./settings";
 let settings = { ...DEFAULT_SETTINGS };
 
@@ -54,6 +55,7 @@ function flush(): void {
   for (const card of pending) {
     if (!card.isConnected) continue;
     const channel = extractChannel(card);
+    updateReportControl(card, channel, resolveChannelId(channel));
     applyFilter(card, channel, settings);
   }
   pending.clear();

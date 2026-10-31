@@ -45,3 +45,48 @@
   cursor: pointer;
 }
 .antislop-panel button:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
+
+.antislop-report {
+  display: block;
+  margin: 6px 0;
+  padding: 5px 9px;
+  border: 1px solid #64748b;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #17202e;
+  font: 12px/1.4 system-ui, sans-serif;
+  cursor: pointer;
+}
+.antislop-report[hidden] { display: none !important; }
+.antislop-blur > .antislop-report { visibility: hidden !important; }
+.antislop-collapse > .antislop-panel { flex-wrap: wrap; }
+.antislop-dialog {
+  box-sizing: border-box;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  border: 1px solid #64748b;
+  border-radius: 12px;
+  padding: 22px;
+  background: #f8fafc;
+  color: #17202e;
+  font: 14px/1.5 system-ui, sans-serif;
+}
+.antislop-dialog::backdrop { background: rgb(15 23 42 / 65%); }
+.antislop-dialog h2 { font-size: 21px; margin: 0 0 10px; }
+.antislop-dialog label { display: block; margin: 12px 0; font-weight: 600; }
+.antislop-dialog input, .antislop-dialog textarea {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid #64748b;
+  border-radius: 5px;
+  background: white;
+  color: #17202e;
+  font: inherit;
+}
+.antislop-dialog button { padding: 7px 12px; margin-right: 8px; font: inherit; cursor: pointer; }
+.antislop-dialog button:disabled { cursor: default; }
+.antislop-dialog :focus-visible, .antislop-report:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }

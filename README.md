@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 6: the extension syncs backend blocklist deltas into a local cache using a
-background service worker and Chrome alarms. Filtering keeps working offline.
+Stage 7: explicit channel reports and appeals are available in the extension and
+API. Filtering uses a local synced cache; reports do not automatically block channels.
 
 ## Product principles
 
@@ -171,6 +171,9 @@ uv pip compile backend/requirements-dev.in --generate-hashes -o backend/requirem
 
 See [blocklist sync and seed import](docs/blocklist-sync.md) for the Stage 5 API
 contract, ETags, removal notices, seed commands, and concurrency trade-offs.
+
+See [reports and appeals](docs/reports-and-appeals.md) for explicit submission
+behavior, stable-channel-ID requirements, deduplication, and anonymous install-ID limits.
 
 ## Architecture and development
 
