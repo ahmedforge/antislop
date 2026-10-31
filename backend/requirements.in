@@ -5,3 +5,5 @@ SQLAlchemy>=2.0,<2.1
 alembic>=1.13,<2
 psycopg[binary]>=3.2,<4
 redis>=5,<8
+
+prometheus-client>=0.23,<1

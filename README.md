@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 10: GitHub Actions checks backend lint, types, PostgreSQL/Redis tests,
-coverage, and the extension build/browser tests on pushes and pull requests.
+Stage 11: aggregate Prometheus metrics and a provisioned Grafana dashboard
+cover API latency, reports, syncs, approved channels, and rate-limit rejections.
 Filtering uses a local synced cache; reports do not automatically block channels.
 
 ## Product principles
@@ -42,7 +42,7 @@ antislop/
 
 - Extension: TypeScript, Manifest V3, esbuild, no UI framework.
 - Backend: Python 3.12, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, Redis, pytest.
-- Engineering: GitHub Actions CI; Prometheus metrics planned for Stage 11.
+- Engineering: GitHub Actions CI, Prometheus metrics, and Grafana dashboards.
 
 ## Setup
 
@@ -144,9 +144,9 @@ docker compose exec redis redis-cli ping
 docker compose down
 ```
 
-Expected: all three services healthy, `{"status":"ok"}`, PostgreSQL
+Expected: all five services healthy, `{"status":"ok"}`, PostgreSQL
 `accepting connections`, and Redis `PONG`. Set `API_PORT=8001` before the Compose
-command if port 8000 is occupied. Only the API port is published, on loopback;
+command if port 8000 is occupied. API, Prometheus (9090), and Grafana (3000) ports are published on loopback;
 PostgreSQL and Redis are available on the internal Compose network.
 
 Compose is a local-development configuration with explicitly disposable database
@@ -186,6 +186,9 @@ reputation scoring, appeal decisions, and brigading limitations.
 
 See [tests and CI](docs/testing-and-ci.md) for the local verification commands,
 coverage gate, isolated database setup, and GitHub workflow details.
+
+See [observability](docs/observability.md) for the ready-to-use local Grafana
+dashboard, metric definitions, privacy boundaries, and monitoring verification.
 
 ## Architecture and development
 

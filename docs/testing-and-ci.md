@@ -68,8 +68,8 @@ cd ..
 docker rm -f -v antislop-ci-postgres antislop-ci-redis
 ```
 
-Expected at Stage 10: Ruff passes; mypy reports no issues in 11 application files;
-93 backend tests pass with 98.65% combined statement/branch coverage; the production
+Expected as of Stage 11: Ruff passes; mypy reports no issues in 12 application files;
+100 backend tests pass with 98.87% combined statement/branch coverage; the production
 extension builds and 26 browser tests pass. Coverage reports show the remaining
 unexecuted branches instead of excluding them to inflate the score. The current
 Starlette TestClient/httpx dependency emits a deprecation warning; tests still pass.
