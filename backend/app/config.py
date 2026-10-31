@@ -10,8 +10,8 @@ class Settings(BaseSettings):
 
     app_name: str = "AntiSlop API"
     environment: Literal["development", "test", "production"] = "development"
-    database_url: PostgresDsn = "postgresql+psycopg://antislop:antislop_dev@localhost:5432/antislop"
-    redis_url: RedisDsn = "redis://localhost:6379/0"
+    database_url: PostgresDsn = PostgresDsn("postgresql+psycopg://antislop:antislop_dev@localhost:5432/antislop")
+    redis_url: RedisDsn = RedisDsn("redis://localhost:6379/0")
 
     rate_limit_namespace: str = Field(default="antislop:rate-limit:v1", pattern=r"^[A-Za-z0-9:_-]{1,100}$")
     rate_limit_install_capacity: int = Field(default=5, ge=1, le=10000)

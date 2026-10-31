@@ -3,14 +3,12 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from alembic import command
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from alembic import command
 from app.models import Appeal, Channel, Install, ModerationAction, Report
-
-
 
 
 def seed(session):

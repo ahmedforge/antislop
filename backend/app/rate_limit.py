@@ -2,6 +2,7 @@
 from hashlib import sha256
 from ipaddress import ip_address
 from math import ceil
+from typing import cast
 
 from fastapi import HTTPException, Request
 from redis import Redis
@@ -55,11 +56,12 @@ def bucket_keys(settings: Settings, install_id: str, peer: str) -> tuple[str, st
 
 def consume(redis: Redis, settings: Settings, install_id: str, peer: str) -> int:
     keys = bucket_keys(settings, install_id, peer)
-    allowed, retry = redis.eval(
+    # This Lua script always returns a two-integer array; Redis types are generic.
+    allowed, retry = cast(list[int], redis.eval(
         TOKEN_BUCKET, len(keys), *keys,
         settings.rate_limit_install_capacity, settings.rate_limit_install_refill_seconds,
         settings.rate_limit_ip_capacity, settings.rate_limit_ip_refill_seconds,
-    )
+    ))
     return 0 if allowed else max(1, ceil(float(retry)))
 
 

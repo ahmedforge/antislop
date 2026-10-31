@@ -143,3 +143,14 @@ def test_unavailable_database_is_retryable_and_does_not_expose_credentials(path,
         assert response.status_code == 503
         assert response.headers["retry-after"] == "5"
         assert "secret" not in response.text
+
+
+def test_score_failure_rolls_back_report_install_and_channel(api):
+    from sqlalchemy import text
+
+    client, engine = api
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE channels ADD CONSTRAINT test_score_failure CHECK (score = 0)"))
+    response = client.post("/v1/reports", json=payload())
+    assert response.status_code == 503
+    assert count(engine, Report) == count(engine, Install) == count(engine, Channel) == 0

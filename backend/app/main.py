@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -5,17 +6,17 @@ from redis import Redis
 from redis.backoff import NoBackoff
 from redis.retry import Retry
 
-from app.moderation import router as moderation_router
+from app.blocklist import router as blocklist_router
 from app.config import Settings
 from app.db import make_engine
-from app.blocklist import router as blocklist_router
+from app.moderation import router as moderation_router
 from app.submissions import router as submissions_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings if settings is not None else Settings()
     @asynccontextmanager
-    async def lifespan(app: FastAPI):
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # Engine creation is lazy: liveness still works without a database connection.
         app.state.engine = make_engine(settings)
         app.state.redis = Redis.from_url(

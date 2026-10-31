@@ -221,3 +221,22 @@ def test_score_saturates_instead_of_overflowing(api):
     assert report(client, second).status_code == 201
     assert channel(engine).score == Decimal('99999999.9999')
     assert channel(engine).status == 'pending_review'
+
+
+def test_review_lists_filter_paginate_and_reject_invalid_queries(api):
+    client, engine = api
+    with Session(engine) as session:
+        for letter, status in [('a', 'pending_review'), ('b', 'pending_review'), ('c', 'rejected')]:
+            session.add(Channel(youtube_channel_id='UC' + letter * 22, status=status))
+        session.commit()
+    first = client.get('/v1/admin/channels?limit=1', headers=HEADERS).json()['channels']
+    second = client.get('/v1/admin/channels?limit=1&offset=1', headers=HEADERS).json()['channels']
+    assert len(first) == len(second) == 1 and first[0]['id'] != second[0]['id']
+    assert first[0]['status'] == second[0]['status'] == 'pending_review'
+    rejected = client.get('/v1/admin/channels?status=rejected', headers=HEADERS).json()['channels']
+    assert len(rejected) == 1 and rejected[0]['youtube_channel_id'] == 'UC' + 'c' * 22
+    assert client.get('/v1/admin/channels?offset=3', headers=HEADERS).json()['channels'] == []
+    assert client.get(f'/v1/admin/channels/{uuid4()}/reports', headers=HEADERS).status_code == 404
+    for path in ['/channels?limit=101', '/channels?offset=-1', '/channels?status=unknown',
+                 '/appeals?status=approved', '/appeals?limit=0']:
+        assert client.get('/v1/admin'+path, headers=HEADERS).status_code == 422

@@ -10,8 +10,8 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import Appeal, Channel, Install, Report
-from app.schemas import Submission
 from app.rate_limit import enforce_submission_limits
+from app.schemas import Submission
 
 router = APIRouter(prefix="/v1", tags=["submissions"])
 

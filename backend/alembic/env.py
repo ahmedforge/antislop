@@ -1,9 +1,9 @@
-from alembic import context
 from sqlalchemy import create_engine, pool
 
+from alembic import context
+from app import models  # noqa: F401 - register all tables with metadata
 from app.config import Settings
 from app.db import Base
-from app import models  # noqa: F401 - register all tables with metadata
 
 config = context.config
 url = str(Settings().database_url)

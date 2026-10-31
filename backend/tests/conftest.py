@@ -3,10 +3,20 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
+
+from alembic import command
+
+
+def pytest_sessionstart(session):
+    # Missing services must not produce a misleading green integration run in CI.
+    if os.environ.get("CI", "").lower() in {"true", "1"}:
+        missing = [name for name in ("TEST_DATABASE_URL", "TEST_REDIS_URL") if not os.environ.get(name)]
+        if missing:
+            raise pytest.UsageError("CI requires " + ", ".join(missing))
+
 
 @pytest.fixture
 def migrated_db(monkeypatch):

@@ -5,8 +5,8 @@ channels on YouTube, backed by a community blocklist API.
 
 ## Status
 
-Stage 9: reputation-weighted reports feed a review queue; authenticated admins
-approve/reject channels and resolve appeals with an audit trail.
+Stage 10: GitHub Actions checks backend lint, types, PostgreSQL/Redis tests,
+coverage, and the extension build/browser tests on pushes and pull requests.
 Filtering uses a local synced cache; reports do not automatically block channels.
 
 ## Product principles
@@ -42,7 +42,7 @@ antislop/
 
 - Extension: TypeScript, Manifest V3, esbuild, no UI framework.
 - Backend: Python 3.12, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, Redis, pytest.
-- Engineering: GitHub Actions CI and Prometheus metrics.
+- Engineering: GitHub Actions CI; Prometheus metrics planned for Stage 11.
 
 ## Setup
 
@@ -183,6 +183,9 @@ Redis failure behavior, and proxy/IP considerations.
 
 See [scoring and moderation](docs/moderation.md) for admin setup, review queues,
 reputation scoring, appeal decisions, and brigading limitations.
+
+See [tests and CI](docs/testing-and-ci.md) for the local verification commands,
+coverage gate, isolated database setup, and GitHub workflow details.
 
 ## Architecture and development
 

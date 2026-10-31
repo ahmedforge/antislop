@@ -1,4 +1,5 @@
 """Manual decisions are the only route from community reports to blocking."""
+from collections.abc import Iterator
 from contextlib import contextmanager
 from secrets import compare_digest
 from typing import Literal
@@ -7,7 +8,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, select, update
+from sqlalchemy import func, insert, select, update
+from sqlalchemy.engine import Connection
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import Appeal, Channel, Install, ModerationAction, Report
@@ -41,7 +43,7 @@ class AppealDecision(BaseModel):
 
 
 @contextmanager
-def transaction(request: Request):
+def transaction(request: Request) -> Iterator[Connection]:
     try:
         with request.app.state.engine.begin() as connection:
             connection.exec_driver_sql("SET LOCAL lock_timeout = '3s'")
@@ -52,9 +54,9 @@ def transaction(request: Request):
                             headers={**NO_STORE, "Retry-After": "5"}) from None
 
 
-@router.get("/channels")
+@router.get("/channels", response_model=None)
 def channels(request: Request, status: Literal["unreviewed", "pending_review", "approved", "rejected"] = "pending_review",
-             limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)):
+             limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)) -> dict[str, object]:
     with transaction(request) as connection:
         rows = connection.execute(select(Channel.id, Channel.youtube_channel_id, Channel.handle,
                                          Channel.status, Channel.score, Channel.updated_at).where(
@@ -62,8 +64,8 @@ def channels(request: Request, status: Literal["unreviewed", "pending_review", "
         return {"channels": [dict(row._mapping) for row in rows]}
 
 
-@router.get("/channels/{channel_id}/reports")
-def reports(channel_id: UUID, request: Request, limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)):
+@router.get("/channels/{channel_id}/reports", response_model=None)
+def reports(channel_id: UUID, request: Request, limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)) -> dict[str, object]:
     with transaction(request) as connection:
         if connection.scalar(select(Channel.id).where(Channel.id == channel_id)) is None:
             raise HTTPException(404, "Channel not found.", headers=NO_STORE)
@@ -73,9 +75,9 @@ def reports(channel_id: UUID, request: Request, limit: int = Query(50, ge=1, le=
         return {"reports": [dict(row._mapping) for row in rows]}
 
 
-@router.get("/appeals")
+@router.get("/appeals", response_model=None)
 def appeals(request: Request, status: Literal["open", "accepted", "rejected"] = "open",
-            limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)):
+            limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)) -> dict[str, object]:
     with transaction(request) as connection:
         rows = connection.execute(select(Appeal.id, Appeal.channel_id, Channel.youtube_channel_id,
                                          Appeal.reason, Appeal.status, Appeal.created_at, Appeal.resolved_at).join(
@@ -84,8 +86,8 @@ def appeals(request: Request, status: Literal["open", "accepted", "rejected"] = 
         return {"appeals": [dict(row._mapping) for row in rows]}
 
 
-@router.post("/channels/{channel_id}/decision")
-def decide_channel(channel_id: UUID, payload: ChannelDecision, request: Request):
+@router.post("/channels/{channel_id}/decision", response_model=None)
+def decide_channel(channel_id: UUID, payload: ChannelDecision, request: Request) -> dict[str, object]:
     with transaction(request) as connection:
         channel = connection.execute(select(Channel.id, Channel.status).where(
             Channel.id == channel_id).with_for_update()).first()
@@ -95,13 +97,13 @@ def decide_channel(channel_id: UUID, payload: ChannelDecision, request: Request)
         if channel.status == status:
             return {"channel_id": channel_id, "status": status, "changed": False}
         connection.execute(update(Channel).where(Channel.id == channel_id).values(status=status))
-        connection.execute(ModerationAction.__table__.insert().values(
+        connection.execute(insert(ModerationAction).values(
             channel_id=channel_id, action=payload.action, actor="admin-api", reason=payload.reason))
         return {"channel_id": channel_id, "status": status, "changed": True}
 
 
-@router.post("/appeals/{appeal_id}/decision")
-def decide_appeal(appeal_id: UUID, payload: AppealDecision, request: Request):
+@router.post("/appeals/{appeal_id}/decision", response_model=None)
+def decide_appeal(appeal_id: UUID, payload: AppealDecision, request: Request) -> dict[str, object]:
     with transaction(request) as connection:
         channel_id = connection.scalar(select(Appeal.channel_id).where(Appeal.id == appeal_id))
         if channel_id is None:
@@ -117,7 +119,7 @@ def decide_appeal(appeal_id: UUID, payload: AppealDecision, request: Request):
         connection.execute(update(Appeal).where(Appeal.id == appeal_id).values(status=resolved, resolved_at=func.now()))
         if payload.action == "accept":
             connection.execute(update(Channel).where(Channel.id == channel_id).values(status="rejected"))
-        connection.execute(ModerationAction.__table__.insert().values(
+        connection.execute(insert(ModerationAction).values(
             channel_id=channel_id, appeal_id=appeal_id, action=f"{payload.action}_appeal",
             actor="admin-api", reason=payload.reason))
         return {"appeal_id": appeal_id, "status": resolved, "changed": True}

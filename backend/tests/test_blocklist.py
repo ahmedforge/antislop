@@ -1,9 +1,9 @@
-from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime, timedelta
-from pathlib import Path
-from threading import Event
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
+from pathlib import Path
+from threading import Event
 
 import pytest
 from fastapi.testclient import TestClient
